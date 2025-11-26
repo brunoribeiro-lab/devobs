@@ -15,7 +15,7 @@ export default async function Home({
     <div className="flex min-h-screen">
         <LanguageSwitcher />
 
-        Bem Vindo: {translate('welcome')}
+        Bem Vindo [LOCALE]: {translate('welcome')}
     </div>
   );
 }
