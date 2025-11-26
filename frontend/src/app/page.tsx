@@ -1,11 +1,18 @@
 import LanguageSwitcher from '@/components/language/Switcher';
 import { getTranslations } from 'next-intl/server';
 import { setRequestLocale } from 'next-intl/server';
+import { Google, Facebook, LinkedIn, Github } from "@/components/ui/icons";
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
     const { locale } = await params;
     setRequestLocale(locale);
     const translate = await getTranslations();
+    const providers = {
+        Google,
+        Facebook,
+        LinkedIn,
+        Github,
+    };
 
     return (
         <div className="login-background">
@@ -13,7 +20,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                 {/* Card de Login */}
                 <div className="max-w-xl w-full card-login rounded-2xl shadow-lg overflow-hidden border-t-4 border-blue-500">
                     <div className="flex">
-                        <div className="p-8 flex-1">
+                        <div className="p-8 pt-4 flex-1">
                             <h4 className="text-2xl font-bold text-gray-400">{translate('login.getStarted')}</h4>
                             <p className="text-gray-300 mt-2">{translate('login.enterCredentials')}</p>
                         </div>
@@ -93,12 +100,13 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
                         {/* Login Social */}
                         <div className="flex justify-center space-x-4">
-                            {['Google', 'Facebook', 'LinkedIn', 'GitHub'].map((provider) => (
+                            {Object.entries(providers).map(([name, IconCmp]) => (
                                 <button
-                                    key={provider}
-                                    className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition duration-200"
+                                    key={name}
+                                    className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center
+                 hover:bg-gray-300 transition duration-200"
                                 >
-                                    <span className="text-gray-700 text-xs">{provider[0]}</span>
+                                    <IconCmp size={32} className="text-gray-700" />
                                 </button>
                             ))}
                         </div>
