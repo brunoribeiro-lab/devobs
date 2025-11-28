@@ -22,6 +22,9 @@
     "passwordRequired": "Senha é obrigatória",
     "passwordMinLength": "Senha deve ter pelo menos 6 caracteres",
     "loginError": "Erro no login",
-    "connectionError": "Erro de conexão"
+    "connectionError": "Erro de conexão",
+    "unknownError": "Erro desconhecido. Tente novamente mais tarde.",
+    "invalidCredentialsTitle": "Credenciais inválidas",
+    "UnexpectedError": "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde."
   }
 }

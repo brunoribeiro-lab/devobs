@@ -22,6 +22,9 @@
     "passwordRequired": "Password is required",
     "passwordMinLength": "Password must be at least 6 characters",
     "loginError": "Login error",
-    "connectionError": "Connection error"
+    "connectionError": "Connection error",
+    "unknownError": "Unknown error. Please try again later.",
+    "invalidCredentialsTitle": "Invalid credentials",
+    "UnexpectedError": "An unexpected error occurred. Please try again later."
   }
 }

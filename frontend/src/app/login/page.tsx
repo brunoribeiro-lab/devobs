@@ -1,65 +1,72 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/language/Switcher';
 import { Google, Facebook, LinkedIn, Github } from "@/components/ui/icons";
 import Input from '@/components/ui/Input';
+import handleLoginSubmit from '@/services/auth/login';
+import { loginSchema } from '@/validation/login';
+import { LoginFieldErrors } from '@/types/http/login';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import Dialog from '@/components/ui/Dialog';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { z } from 'zod';
 
-interface LoginForm {
-  email: string;
-  password: string;
-}
+type FormFields = 'login' | 'password';
 
 export default function Home() {
+  const isAuthenticated = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
+
   const t = useTranslations();
-
-  const [formData, setFormData] = useState<LoginForm>({ email: '', password: '' });
-  const [errors, setErrors] = useState<Partial<LoginForm>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ login: '', password: '' });
+  const [errors, setErrors] = useState<LoginFieldErrors>({ login: [], password: [] });
   const [isLoading, setIsLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name as keyof LoginForm]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, id, value } = e.currentTarget;
+    const key = (name || id) as FormFields;
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]?.length) setErrors((prev) => ({ ...prev, [key]: [] }));
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<LoginForm> = {};
-    if (!formData.email) newErrors.email = t("errors.emailRequired");
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t("errors.emailInvalid");
 
-    if (!formData.password) newErrors.password = t("errors.passwordRequired");
-    else if (formData.password.length < 6) newErrors.password = t("errors.passwordMin", { min: 6 });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
     setIsLoading(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+
+    const result = loginSchema.safeParse(formData);
+    if (!result.success) {
+      const flattened = z.flattenError(result.error);
+      const f = flattened.fieldErrors;
+
+      setErrors({
+        login: f.login ?? [],
+        password: f.password ?? [],
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrors({ email: data.message || t("errors.loginFailed"), password: data.message || t("errors.loginFailed") });
-      } else {
-        console.log("Login successful", data);
-      }
-    } catch (err) {
-      setErrors({ email: t("errors.network"), password: t("errors.network") });
-    } finally {
+
       setIsLoading(false);
+      return;
     }
+
+    const parsed = result.data;
+    const msg = await handleLoginSubmit(e, parsed, setErrors, t);
+    if (msg) {
+      setDialogMessage(msg);
+      setDialogOpen(true);
+    }
+    setIsLoading(false);
   };
 
   const providers = { Google, Facebook, LinkedIn, Github };
@@ -78,29 +85,55 @@ export default function Home() {
             </div>
           </div>
 
+          <Dialog
+            open={dialogOpen}
+            onClose={() => setDialogOpen(false)}
+            title={t("errors.invalidCredentialsTitle")}
+            message={dialogMessage}
+            actions={[{ label: 'OK', role: 'cancel' }]}
+          />
+
           <div className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
                 label={t("login.email")}
-                type="email"
-                id="email"
-                name="email"
+                type="login"
+                id="login"
+                name="login"
                 placeholder={t("login.emailPlaceholder")}
-                value={formData.email}
-                onChange={handleInputChange}
-                error={errors.email}
+                leftIcon={<Mail className="h-5 w-5 text-gray-400" />}
+                value={formData.login}
+                onChange={handleChange}
+                errorMessages={errors.login}
+                className="text-white border-gray-700"
+                labelClassName="text-white"
               />
 
               <Input
                 label={t("login.password")}
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 id="password"
                 name="password"
                 placeholder={t("login.passwordPlaceholder")}
                 value={formData.password}
-                onChange={handleInputChange}
-                showPasswordToggle
-                error={errors.password}
+                onChange={handleChange}
+                leftIcon={<Lock className="h-5 w-5 text-gray-400" />}
+                rightElement={
+                  <button
+                    type="button"
+                    className="flex items-center"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    )}
+                  </button>
+                }
+                errorMessages={errors.password}
+                className="text-white border-gray-700"
+                labelClassName="text-white"
               />
 
               <div className="flex justify-between items-center">
@@ -133,7 +166,7 @@ export default function Home() {
             <div className="flex justify-center space-x-4">
               {Object.entries(providers).map(([name, IconCmp]) => (
                 <button key={name} className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300">
-                  <IconCmp size={20} className="text-gray-700" />
+                  <IconCmp size={32} className="text-gray-700" />
                 </button>
               ))}
             </div>
