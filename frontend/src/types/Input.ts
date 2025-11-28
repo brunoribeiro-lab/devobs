@@ -1,6 +1,12 @@
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export type InputProps = Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "size"
+> & {
   label?: string;
-  error?: string | boolean;
-  helperText?: string;
-  showPasswordToggle?: boolean;
-}
+  errorMessages?: string[];
+
+  leftIcon?: React.ReactNode;
+  rightElement?: React.ReactNode;
+  wrapperClassName?: string;
+  labelClassName?: string;
+};
