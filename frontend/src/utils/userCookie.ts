@@ -72,8 +72,18 @@ export function clearAuthCookies(
   res: NextResponse,
   names: string[] = ["access_token", "refresh_token", "user"]
 ) {
+  const base = process.env.NEXT_PUBLIC_COOKIE ?? "localhost";
+  const domains = [
+    undefined,
+    base ? base.replace(/^\./, "") : undefined,
+    base ? (base.startsWith(".") ? base : `.${base}`) : undefined,
+  ].filter(Boolean) as string[];
+
   for (const n of names) {
     res.cookies.set(n, "", { maxAge: 0, path: "/" });
+    for (const d of domains) {
+      res.cookies.set(n, "", { maxAge: 0, path: "/", domain: d });
+    }
   }
   return res;
 }
